@@ -13,6 +13,13 @@
     <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" />
   </p>
 
+  <h3>One-Click Deploy</h3>
+  
+  <p>
+    <a href="https://heroku.com/deploy?template=https://github.com/KunalG932/auto-manga-chapter-update-bot">
+      <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
+    </a>
+  </p>
 </div>
 
 ---
@@ -34,7 +41,7 @@ Hey! This is a powerful Telegram bot designed to make running a manga channel a 
 - **Your Branding**: Add your own watermarks, promo banners, and captions to every post.
 - **Smart Tracking**: If one site is down, it checks others to make sure your followers get their fix ASAP.
 - **Fast Search**: Built-in search engine to find and track any manga in seconds.
-- **Easy Deployment**: Runs on VPS or even your local machine with just a few clicks.
+- **Easy Deployment**: Runs on Heroku, VPS, or even your local machine with just a few clicks.
 
 ---
 
@@ -107,6 +114,48 @@ graph TD
    ```bash
    python bot.py
    ```
+
+---
+
+## Deployment
+
+### Heroku (Recommended)
+
+1. Click the **One-Click Deploy** button above.
+2. Fill in the required environment variables:
+   - `API_ID` - Get from [my.telegram.org](https://my.telegram.org)
+   - `API_HASH` - Get from [my.telegram.org](https://my.telegram.org)
+   - `BOT_TOKEN` - Get from [@BotFather](https://t.me/BotFather)
+   - `MONGO_DB_URI` - Your MongoDB connection string
+   - `OWNER_ID` - Your Telegram user ID
+3. Deploy and scale the worker dyno.
+
+### Manual Heroku CLI
+
+```bash
+# Clone the repo
+git clone https://github.com/KunalG932/auto-manga-chapter-update-bot.git
+cd auto-manga-chapter-update-bot
+
+# Login to Heroku
+heroku login
+
+# Create app
+heroku create auto-manga-chapter-update-bot
+
+# Set environment variables
+heroku config:set API_ID=your_api_id
+heroku config:set API_HASH=your_api_hash
+heroku config:set BOT_TOKEN=your_bot_token
+heroku config:set MONGO_DB_URI=your_mongo_uri
+heroku config:set OWNER_ID=your_user_id
+
+# Deploy
+git push heroku main
+
+# Scale worker
+heroku ps:scale worker=1
+```
 
 ---
 
