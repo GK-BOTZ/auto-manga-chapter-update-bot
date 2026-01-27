@@ -85,7 +85,8 @@ def format_filename(template, title, chapter, chap_no):
             title=sanitize(title)[:50],
             chapter=sanitize(chapter)[:30],
             chap_no=chap_no,
-            chapter_no=chap_no
+            chapter_no=chap_no,
+            num=chap_no
         )
     except KeyError as e:
         log.warning(f"[UTIL] Format error: {e}, using default")

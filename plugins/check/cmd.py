@@ -243,7 +243,7 @@ async def dl_now(c, q):
                             first_post_link = link
                         tmpl = await db.get_cfg(uid, "caption") or DEF_CAP
                         chap_no = extract_chap_no(chap_title)
-                        await sent.edit_caption(tmpl.format(title=title, chapter=chap_no, link=link), reply_markup=markup)
+                        await sent.edit_caption(tmpl.format(title=title, chapter=chap_no, link=link, num=chap_no), reply_markup=markup)
                         dump_cid = await db.get_cfg(uid, "dump_cid") or Config.LOG_GROUP
                         if dump_cid:
                             try:
@@ -293,7 +293,7 @@ async def dl_now(c, q):
                     def_tmpl = "<blockquote><b>{manga_title}</b></blockquote>\n➥ <b><a href=\"{chapter_link}\">Cʜᴀᴘᴛᴇʀ {chapter_num}</a> Uᴘʟᴏᴀᴅᴇᴅ</b>\n➥ <b><a href=\"{channel_link}\">Rᴇᴀᴅ Nᴏᴡ</a></b>"
                     update_tmpl = await db.get_cfg(uid, "update_msg") or def_tmpl
                     try:
-                        update_msg = update_tmpl.format(manga_title=title, title=title, chapter_num=chap_range, chapter_link=f_link, channel_link=channel_link)
+                        update_msg = update_tmpl.format(manga_title=title, title=title, chapter_num=chap_range, chapter_link=f_link, channel_link=channel_link, num=chap_range)
                     except Exception as e:
                         log.warning(f"Update msg format error: {e}")
                         update_msg = def_tmpl.format(manga_title=title, chapter_num=chap_range, chapter_link=f_link, channel_link=channel_link)

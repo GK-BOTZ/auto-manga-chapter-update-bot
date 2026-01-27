@@ -63,6 +63,7 @@ async def ask_u_msg(c, q):
         "<b>Variables:</b>\n"
         "<code>{manga_title}</code> - Manga name\n"
         "<code>{chapter_num}</code> - Chapter number\n"
+        "<code>{num}</code> - Chapter number (alias)\n"
         "<code>{chapter_link}</code> - Direct link to chapter\n"
         "<code>{channel_link}</code> - Link to channel\n\n"
         "<b>Examples:</b>\n\n"

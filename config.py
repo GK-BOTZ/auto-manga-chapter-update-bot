@@ -16,7 +16,7 @@ class Config:
     MAX_PDF_SIZE = 50 * 1024 * 1024
     DOWNLOAD_DIR = "downloads"
     MAX_IMAGE_WIDTH = 1200
-    JPEG_QUALITY = 85
+    JPEG_QUALITY = 95
     FSUB_CHANNELS = []
     _fsub = os.getenv("FSUB_CHANNELS", "")
     if _fsub:

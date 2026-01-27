@@ -212,7 +212,7 @@ class DL:
         with open(output_path, 'wb') as f:
             f.write(buffer.getvalue())
         return output_path
-    def _save_pdf_pillow(self, image_paths, output_path, qual=80):
+    def _save_pdf_pillow(self, image_paths, output_path, qual=95):
         import gc
         if not image_paths:
             return None
@@ -245,12 +245,13 @@ class DL:
             processed.clear()
             gc.collect()
         return output_path
-    def pdf(self, dir, name, chap, qual=80, fname_fmt=None, first_promo=None, last_promo=None):
+    def pdf(self, dir, name, chap, qual=95, fname_fmt=None, first_promo=None, last_promo=None):
         try:
             chap_no = extract_chap_no(chap)
             fmt = fname_fmt or DEF_FNAME
             fname = format_filename(fmt, name, chap, chap_no)
             p = dir.parent / f"{fname}.pdf"
+            p.parent.mkdir(parents=True, exist_ok=True)
             log.info(f"[DL] Creating PDF: {p}")
             imgs = sorted(dir.glob("*.jpg"))
             if not imgs:
@@ -302,7 +303,7 @@ class DL:
         except Exception as e:
             log.error(f"[DL] CBZ fail: {e}")
             return None
-    async def make(self, dir, name, chap, type='pdf', qual=80, fname_fmt=None, first_data=None, last_data=None):
+    async def make(self, dir, name, chap, type='pdf', qual=95, fname_fmt=None, first_data=None, last_data=None):
         import base64
         first_promo = None
         last_promo = None

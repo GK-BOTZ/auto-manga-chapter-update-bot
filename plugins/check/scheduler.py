@@ -192,7 +192,7 @@ async def process_sub_check(app, uid, sub):
                     if not first_post_link:
                         first_post_link = link
                     chap_no = extract_chap_no(chap_title)
-                    msg = tmpl.format(title=title, chapter=chap_no, link=link)
+                    msg = tmpl.format(title=title, chapter=chap_no, link=link, num=chap_no)
                     try:
                         await sent.edit_caption(msg, reply_markup=markup)
                     except:
@@ -251,7 +251,8 @@ async def process_sub_check(app, uid, sub):
             chapter_num=chap_range,
             chapter_link=first_post_link,
             channel_link=channel_link,
-            title=title, chapters=chap_range, link=first_post_link, channel=channel_link
+            title=title, chapters=chap_range, link=first_post_link, channel=channel_link,
+            num=chap_range
         )
         try:
             up_btn_txt = await db.get_cfg(int(uid), "update_btn", "Click Here to Read")

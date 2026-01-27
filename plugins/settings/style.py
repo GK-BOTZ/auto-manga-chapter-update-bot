@@ -46,6 +46,7 @@ async def ask_cap(c, q):
         "<b>Variables:</b>\n"
         "<code>{title}</code> - Manga name\n"
         "<code>{chapter}</code> - Chapter title\n"
+        "<code>{num}</code> - Chapter number\n"
         "<code>{link}</code> - Direct link\n\n"
         "<b>Examples:</b>\n\n"
         "<code>&lt;b&gt;&lt;blockquote&gt;{title}&lt;/blockquote&gt;&lt;/b&gt;\n"
@@ -68,7 +69,8 @@ async def ask_fname(c, q):
         "<b>Variables:</b>\n"
         "<code>{title}</code> - Manga name\n"
         "<code>{chapter}</code> - Full chapter title\n"
-        "<code>{chap_no}</code> - Chapter number only\n\n"
+        "<code>{chap_no}</code> - Chapter number only\n"
+        "<code>{num}</code> - Chapter number only (alias)\n\n"
         "<b>Examples:</b>\n"
         "<code>{title} - {chap_no}</code>\n"
         "<code>[MC] [{chap_no}] {title}</code>\n"
@@ -88,6 +90,6 @@ async def reset_style(c, q):
 async def view_style(c, q):
     uid = q.from_user.id
     cap = await db.get_cfg(uid, "caption", "{title} - {chapter}")
-    sample = cap.format(title="Manga Title", chapter="Ch. 001", link="https://t.me/...")
+    sample = cap.format(title="Manga Title", chapter="Chapter One", link="https://t.me/...", num="001")
     await q.message.reply(f"<b>[PREVIEW] Caption:</b>\n\n{sample}")
     await q.answer()
