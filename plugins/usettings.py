@@ -43,6 +43,7 @@ async def show_user_settings(msg, uid, edit=False):
     update_sticker = await db.get_cfg(uid, "update_sticker")
     update_btn = await db.get_cfg(uid, "update_btn", "Read Now")
     chan_listen = await db.get_cfg(uid, "chan_listen", False)
+    update_btn_on = await db.get_cfg(uid, "update_btn_on", True)
     caption = await db.get_cfg(uid, "caption")
     fname = await db.get_cfg(uid, "fname", "{title} - {chap_no}")
     monitoring = await db.get_cfg(uid, "mon", True)
@@ -72,6 +73,7 @@ async def show_user_settings(msg, uid, edit=False):
         f"Channel: <code>{update_cid or 'Not set'}</code>\n"
         f"Button: <code>{update_btn}</code>\n"
         f"Sticker: {_set(update_sticker)}\n"
+        f"Btn Enabled: {_s(update_btn_on)}\n"
         f"Listener: {_s(chan_listen)}\n"
         f"Message: {_set(update_msg)}\n"
         "</blockquote>\n\n"
@@ -210,6 +212,7 @@ async def ue_upd(c, q):
         [KB(f"⊕ Channel {_set(update_cid)}", f"ua_ucid_{uid}")],
         [KB(f"⊕ Button Text", f"ua_ubtn_{uid}")],
         [KB(f"⊕ Message {_set(update_msg)}", f"ua_umsg_{uid}")],
+        [KB(f"Btn Toggle {_s(update_btn_on)}", f"ut_ubtn_on_{uid}")],
         [KB(f"Listener {_s(chan_listen)}", f"ut_listen_{uid}")],
         [
             KB("⊖ Clear Sticker", f"uc_ustick_{uid}"),
@@ -224,6 +227,13 @@ async def ut_listen(c, q):
     curr = await db.get_cfg(uid, "chan_listen", False)
     await db.set_cfg(uid, "chan_listen", not curr)
     await q.answer(f"Listener: {_s(not curr)}")
+    await ue_upd(c, q)
+@Client.on_callback_query(filters.regex(r"^ut_ubtn_on_") & filters.user(Config.OWNER_ID))
+async def ut_ubtn_on(c, q):
+    uid = int(q.data.replace("ut_ubtn_on_", ""))
+    curr = await db.get_cfg(uid, "update_btn_on", True)
+    await db.set_cfg(uid, "update_btn_on", not curr)
+    await q.answer(f"Button: {_s(not curr)}")
     await ue_upd(c, q)
 @Client.on_callback_query(filters.regex(r"^uc_ustick_") & filters.user(Config.OWNER_ID))
 async def uc_ustick(c, q):

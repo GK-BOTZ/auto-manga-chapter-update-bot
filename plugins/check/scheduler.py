@@ -221,7 +221,7 @@ async def process_sub_check(app, uid, sub):
                     src_name = chapter.get('src_name')
                     if src_name:
                         await db.up_source(uid, sid, src_name, chap_num, chap_title, chap_url)
-                    sent_chapters.append(clean_chap(chap_title))
+                    sent_chapters.append(extract_chap_no(chap_title))
                 else:
                     await app.send_message(cid, f"File Make Fail: {title} - {chap_title}")
             else:
@@ -257,8 +257,11 @@ async def process_sub_check(app, uid, sub):
             num=chap_range
         )
         try:
-            up_btn_txt = await db.get_cfg(int(uid), "update_btn", "Click Here to Read")
-            up_markup = KM([[KB(str(up_btn_txt), url=channel_link)]])
+            up_btn_on = await db.get_cfg(uid, "update_btn_on", True)
+            up_markup = None
+            if up_btn_on:
+                up_btn_txt = await db.get_cfg(int(uid), "update_btn", "Click Here to Read")
+                up_markup = KM([[KB(str(up_btn_txt), url=channel_link)]])
             banner = sub.get('banner')
             if banner:
                 await app.send_photo(update_cid, banner, caption=update_msg, reply_markup=up_markup)

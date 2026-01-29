@@ -260,7 +260,7 @@ async def dl_now(c, q):
                         fp.unlink()
                         chap_num = chapter.get('_ch_num', 0)
                         await db.up_sub(uid, sid, chap_num, chap_title, chap_url)
-                        sent_chapters.append(chap_title)
+                        sent_chapters.append(extract_chap_no(chap_title))
             shutil.rmtree(p, ignore_errors=True)
             await asyncio.sleep(1)
         if wm_path and Path(wm_path).exists():
@@ -299,8 +299,11 @@ async def dl_now(c, q):
                     except Exception as e:
                         log.warning(f"Update msg format error: {e}")
                         update_msg = def_tmpl.format(manga_title=title, chapter_num=chap_range, chapter_link=f_link, channel_link=channel_link)
-                    up_btn_txt = await db.get_cfg(uid, "update_btn", "Click Here to Read")
-                    up_markup = KM([[KB(str(up_btn_txt), url=channel_link)]])
+                    up_btn_on = await db.get_cfg(uid, "update_btn_on", True)
+                    up_markup = None
+                    if up_btn_on:
+                        up_btn_txt = await db.get_cfg(uid, "update_btn", "Click Here to Read")
+                        up_markup = KM([[KB(str(up_btn_txt), url=channel_link)]])
                     banner = sub.get('banner')
                     sent_ok = False
                     if banner:
