@@ -13,6 +13,7 @@ async def update_menu(c, q):
     update_msg = await db.get_cfg(uid, "update_msg")
     update_sticker = await db.get_cfg(uid, "update_sticker")
     update_btn = await db.get_cfg(uid, "update_btn", "Read Now")
+    update_btn_on = await db.get_cfg(uid, "update_btn_on", True)
     chan_listen = await db.get_cfg(uid, "chan_listen", False)
     cl_s = "●" if chan_listen else "○"
     txt = (
@@ -20,6 +21,7 @@ async def update_menu(c, q):
         "<blockquote>"
         f"<b>Channel:</b> <code>{update_cid or 'Not set'}</code>\n"
         f"<b>Button:</b> <code>{update_btn}</code>\n"
+        f"<b>Btn Enabled:</b> {'●' if update_btn_on else '○'}\n"
         f"<b>Sticker:</b> {_set(update_sticker)}\n"
         f"<b>Listener:</b> {cl_s}\n\n"
         f"<b>Message:</b>\n"
@@ -34,6 +36,7 @@ async def update_menu(c, q):
             KB(f"⊕ Sticker {_set(update_sticker)}", "ask_u_sticker")
         ],
         [KB(f"⊕ Button Text", "ask_u_btn")],
+        [KB(f"Update Button {'●' if update_btn_on else '○'}", "tog_u_btn_on")],
         [KB(f"Channel Listener {cl_s}", "tog_chan_listen")],
         [KB("⊖ Clear All", "c_u_all")],
         [KB("◂ Back", "open_main")]
@@ -112,6 +115,14 @@ async def clear_u_all(c, q):
     await db.set_cfg(uid, "update_btn", None)
     await db.set_cfg(uid, "chan_listen", False)
     await q.answer("Update settings cleared.")
+    await update_menu(c, q)
+@Client.on_callback_query(filters.regex("^tog_u_btn_on"))
+async def tog_u_btn_on(c, q):
+    uid = q.from_user.id
+    curr = await db.get_cfg(uid, "update_btn_on", True)
+    await db.set_cfg(uid, "update_btn_on", not curr)
+    s = "●" if not curr else "○"
+    await q.answer(f"Update Button: {s}")
     await update_menu(c, q)
 @Client.on_callback_query(filters.regex("^tog_chan_listen"))
 async def tog_chan_listen(c, q):

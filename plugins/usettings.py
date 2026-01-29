@@ -196,6 +196,7 @@ async def ue_upd(c, q):
     update_msg = await db.get_cfg(uid, "update_msg")
     update_btn = await db.get_cfg(uid, "update_btn", "Read Now")
     update_sticker = await db.get_cfg(uid, "update_sticker")
+    update_btn_on = await db.get_cfg(uid, "update_btn_on", True)
     chan_listen = await db.get_cfg(uid, "chan_listen", False)
     txt = (
         f"<b>▸ Update Settings</b>\n"
@@ -204,6 +205,7 @@ async def ue_upd(c, q):
         f"Channel: <code>{update_cid or 'Not set'}</code>\n"
         f"Button: <code>{update_btn}</code>\n"
         f"Sticker: {_set(update_sticker)}\n"
+        f"Btn Enabled: {_s(update_btn_on)}\n"
         f"Listener: {_s(chan_listen)}\n\n"
         f"Message:\n<code>{update_msg or 'Default'}</code>"
         "</blockquote>"
