@@ -24,12 +24,22 @@ def extract_chap_no(chap_title):
     text = str(chap_title).lower()
     patterns = [
         r'chapter\s*(\d+(?:\.\d+)?)',
+        r'Chapter\s*(\d+(?:\.\d+)?)',
         r'ch\.?\s*(\d+(?:\.\d+)?)',
         r'episode\s*(\d+(?:\.\d+)?)',
         r'ep\.?\s*(\d+(?:\.\d+)?)',
+        r'chapter\s*(\d+(?:\.\d+)?)\s*\(',
+        r'chapter\s*(\d+(?:\.\d+)?)\s*\[',
+        r'chapter\s*(\d+(?:\.\d+)?)\s*-',
+        r'chapter\s*(\d+(?:\.\d+)?)\s*\(.*?\)',
+        r'chapter\s*(\d+(?:\.\d+)?)\s*\|.*',
         r'#\s*(\d+(?:\.\d+)?)',
-        r'-\s*(\d+(?:\.\d+)?)\s*(?:\(|$)',
+        r'-\s*(\d+(?:\.\d+)?)\s*(?:\(|\[|$)',
         r'(\d+(?:\.\d+)?)\s*$',
+        r'(\d+(?:\.\d+)?)\s*[-–—]\s*.*$',
+        r'\((\d+(?:\.\d+)?)\)',
+        r'\[(\d+(?:\.\d+)?)\]',
+        r'^(\d+(?:\.\d+)?)$',
     ]
     for pattern in patterns:
         m = re.search(pattern, text)
@@ -45,6 +55,16 @@ def extract_chap_no(chap_title):
         largest = max(nums, key=lambda x: int(x))
         return f"{int(largest):03d}"
     return "000"
+
+def clean_chap(chap_title):
+    if not chap_title:
+        return ""
+    # Remove parenthetical site names e.g. (Lagoon Scans)
+    text = re.sub(r'\s*\([^)]*\)\s*$', '', str(chap_title))
+    # Remove redundant "Chapter" or "Ch." if the template adds it anyway
+    text = re.sub(r'^(?:Chapter|Ch\.|Episode|Ep\.)\s*', '', text, flags=re.IGNORECASE)
+    return text.strip()
+
 def extract_title(title: str) -> str:
     if not title:
         return "Unknown"

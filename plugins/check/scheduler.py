@@ -11,7 +11,7 @@ from pathlib import Path
 from database.db import db
 from services.mgr import mgr
 from services.dl import DL
-from services.util import sanitize, extract_chap_no
+from services.util import sanitize, extract_chap_no, clean_chap
 from plugins.settings.shared import get_img_data, get_wmark_data, base64_to_file
 from config import Config
 from pyrogram.types import InlineKeyboardMarkup as KM, InlineKeyboardButton as KB
@@ -151,11 +151,13 @@ async def process_sub_check(app, uid, sub):
         folder_name = sanitize(f"{title}_{chap_title}")
         p = dl_dir / folder_name
         async with DL() as dl:
-            if await dl.get_imgs(imgs, p, wmark_path=wm_path):
+            qual = await db.get_cfg(uid, "quality", 80) or 80
+            if await dl.get_imgs(imgs, p, wmark_path=wm_path, quality=qual):
                 ft = await db.get_cfg(uid, "ftype", "pdf") or "pdf"
-                qual = await db.get_cfg(uid, "quality", 80) or 80
                 fname_fmt = await db.get_cfg(uid, "fname", None)
-                fp = await dl.make(p, title, chap_title, ft, qual, fname_fmt, first_data, last_data)
+                cl_chap = clean_chap(chap_title)
+                chap_no = extract_chap_no(chap_title)
+                fp = await dl.make(p, title, chap_no, ft, qual, fname_fmt, first_data, last_data)
                 if fp:
                     btn_cfg = await db.get_cfg(uid, "btn")
                     markup = None
@@ -219,7 +221,7 @@ async def process_sub_check(app, uid, sub):
                     src_name = chapter.get('src_name')
                     if src_name:
                         await db.up_source(uid, sid, src_name, chap_num, chap_title, chap_url)
-                    sent_chapters.append(chap_title)
+                    sent_chapters.append(clean_chap(chap_title))
                 else:
                     await app.send_message(cid, f"File Make Fail: {title} - {chap_title}")
             else:

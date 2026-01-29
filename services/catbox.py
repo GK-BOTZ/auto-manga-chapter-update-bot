@@ -27,7 +27,10 @@ class Catbox:
                     filename=Path(file_path).name,
                     content_type="application/octet-stream"
                 )
-                async with session.post(url, data=data) as resp:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+                async with session.post(url, data=data, headers=headers) as resp:
                     if resp.status == 200:
                         return await resp.text()
                     else:
@@ -49,7 +52,10 @@ class Catbox:
                     session = aiohttp.ClientSession()
                     _close = True
                 try:
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                    async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                         if resp.status == 200:
                             Path(dest_path).parent.mkdir(parents=True, exist_ok=True)
                             async with aiofiles.open(dest_path, 'wb') as f:

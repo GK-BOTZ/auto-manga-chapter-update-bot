@@ -64,7 +64,7 @@ class DL:
         if data[:5] in (b'<!DOC', b'<html', b'<HTML', b'<?xml', b'error'):
             return False
         return any(b < 32 and b not in (9, 10, 13) for b in data[:20])
-    async def img(self, url, path, base_url=None, max_retries=3, wmark_path=None):
+    async def img(self, url, path, base_url=None, max_retries=3, wmark_path=None, quality=None):
         # Check if file exists with any common image extension
         for e in [".jpg", ".png", ".webp", ".jpeg"]:
             if os.path.exists(str(path) + e):
@@ -177,7 +177,7 @@ class DL:
 
                             # Save as JPEG (we use .jpg for all processed images for simplicity)
                             final_path = str(save_path) + ".jpg"
-                            qual = Config.JPEG_QUALITY
+                            qual = quality or Config.JPEG_QUALITY
                             img.save(
                                 final_path, 
                                 "JPEG", 
@@ -198,7 +198,7 @@ class DL:
                 await asyncio.sleep(0.5 * (attempt + 1))
         log.error(f"[DL] IMG fail after {max_retries} retries: {url[:60]}... - {last_err}")
         return False
-    async def get_imgs(self, urls, dir, base_url=None, wmark_path=None):
+    async def get_imgs(self, urls, dir, base_url=None, wmark_path=None, quality=None):
         dir = Path(dir.parent) / sanitize(dir.name)
         log.info(f"[DL] Downloading {len(urls)} images to {dir}")
         try:
@@ -209,7 +209,7 @@ class DL:
         semaphore = asyncio.Semaphore(4)
         async def dl_with_sem(idx, url):
             async with semaphore:
-                return await self.img(url, dir / f"{idx:03d}", base_url, wmark_path=wmark_path)
+                return await self.img(url, dir / f"{idx:03d}", base_url, wmark_path=wmark_path, quality=quality)
         tasks = [dl_with_sem(i, u) for i, u in enumerate(urls, 1)]
         res = await asyncio.gather(*tasks)
         import gc

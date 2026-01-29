@@ -11,7 +11,7 @@ from pyrogram.types import InlineKeyboardMarkup as KM, InlineKeyboardButton as K
 from database.db import db
 from services.mgr import mgr
 from services.dl import DL
-from services.util import sanitize, extract_chap_no
+from services.util import sanitize, extract_chap_no, clean_chap
 from plugins.settings.shared import get_img_data, get_wmark_data, base64_to_file
 from config import Config
 from .shared import (
@@ -208,11 +208,12 @@ async def dl_now(c, q):
             dl_dir = get_dl_dir(uid)
             p = dl_dir / sanitize(f"{title}_{chap_title}")
             async with DL() as dl:
-                if await dl.get_imgs(imgs, p, wmark_path=wm_path):
+                qual = await db.get_cfg(uid, "quality", 80) or 80
+                if await dl.get_imgs(imgs, p, wmark_path=wm_path, quality=qual):
                     ft = await db.get_cfg(uid, "ftype", "pdf") or "pdf"
-                    qual = await db.get_cfg(uid, "quality", 80) or 80
                     fname_fmt = await db.get_cfg(uid, "fname", None)
-                    fp = await dl.make(p, title, chap_title, ft, qual, fname_fmt, first_data, last_data)
+                    chap_no = extract_chap_no(chap_title)
+                    fp = await dl.make(p, title, chap_no, ft, qual, fname_fmt, first_data, last_data)
                     if fp:
                         btn_cfg = await db.get_cfg(uid, "btn")
                         markup = KM([[KB(btn_cfg['txt'], url=btn_cfg['url'])]]) if btn_cfg and isinstance(btn_cfg, dict) and 'txt' in btn_cfg else None
@@ -242,6 +243,7 @@ async def dl_now(c, q):
                         if not first_post_link:
                             first_post_link = link
                         tmpl = await db.get_cfg(uid, "caption") or DEF_CAP
+                        # Use chapter number for all placeholders
                         chap_no = extract_chap_no(chap_title)
                         await sent.edit_caption(tmpl.format(title=title, chapter=chap_no, link=link, num=chap_no), reply_markup=markup)
                         dump_cid = await db.get_cfg(uid, "dump_cid") or Config.LOG_GROUP
