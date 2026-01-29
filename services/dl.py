@@ -65,8 +65,10 @@ class DL:
             return False
         return any(b < 32 and b not in (9, 10, 13) for b in data[:20])
     async def img(self, url, path, base_url=None, max_retries=3, wmark_path=None):
-        if os.path.exists(path):
-            return True
+        # Check if file exists with any common image extension
+        for e in [".jpg", ".png", ".webp", ".jpeg"]:
+            if os.path.exists(str(path) + e):
+                return True
         last_err = None
         use_proxy = needs_proxy(url)
         for attempt in range(max_retries):
@@ -136,12 +138,31 @@ class DL:
                 def _process_img(img_data, save_path, w_path):
                     try:
                         with Image.open(BytesIO(img_data)) as img:
-                            img = img.convert("RGB")
+                            orig_format = img.format
+                            ext = "." + (orig_format.lower() if orig_format else "jpg")
+                            if ext == ".mpo": ext = ".jpg"
+                            if ext == ".jpeg": ext = ".jpg"
+                            
+                            final_path = str(save_path) + ext
+                            
+                            # Check if resizing is needed
                             max_width = Config.MAX_IMAGE_WIDTH
-                            if img.width > max_width:
+                            needs_resize = img.width > max_width
+                            needs_watermark = w_path and os.path.exists(w_path)
+
+                            # If no processing is needed and it's already a good format, save raw
+                            if not needs_resize and not needs_watermark and orig_format in ["JPEG", "MPO", "PNG", "WEBP"]:
+                                with open(final_path, 'wb') as f:
+                                    f.write(img_data)
+                                return True
+
+                            # Process image
+                            img = img.convert("RGB")
+                            if needs_resize:
                                 ratio = max_width / img.width
-                                img = img.resize((max_width, int(img.height * ratio)), Image.LANCZOS)
-                            if w_path and os.path.exists(w_path):
+                                img = img.resize((max_width, int(img.height * ratio)), Image.Resampling.LANCZOS)
+                            
+                            if needs_watermark:
                                 try:
                                     with Image.open(w_path) as wm:
                                         wm_w = int(img.width * 0.20)
@@ -153,11 +174,22 @@ class DL:
                                         img.paste(wm, pos, mask)
                                 except Exception as wm_e:
                                     log.warning(f"[DL] Watermark apply fail: {wm_e}")
-                            img.save(save_path, "JPEG", quality=Config.JPEG_QUALITY, optimize=True, progressive=True)
+
+                            # Save as JPEG (we use .jpg for all processed images for simplicity)
+                            final_path = str(save_path) + ".jpg"
+                            qual = Config.JPEG_QUALITY
+                            img.save(
+                                final_path, 
+                                "JPEG", 
+                                quality=qual, 
+                                optimize=True, 
+                                progressive=True,
+                                subsampling=0 if qual > 90 else 422
+                            )
                         return True
                     except Exception as ex:
-                        log.warning(f"[DL] Optimization fail for {save_path}: {ex}")
-                        with open(save_path, 'wb') as f:
+                        log.warning(f"[DL] Processing fail for {save_path}: {ex}")
+                        with open(str(save_path) + ".jpg", 'wb') as f:
                             f.write(img_data)
                         return True
                 return await asyncio.to_thread(_process_img, data, path, wmark_path)
@@ -174,12 +206,14 @@ class DL:
         except Exception as e:
             log.error(f"[DL] Failed to create dir {dir}: {e}")
             return False
-        semaphore = asyncio.Semaphore(10)
+        semaphore = asyncio.Semaphore(4)
         async def dl_with_sem(idx, url):
             async with semaphore:
-                return await self.img(url, dir / f"{idx:03d}.jpg", base_url, wmark_path=wmark_path)
+                return await self.img(url, dir / f"{idx:03d}", base_url, wmark_path=wmark_path)
         tasks = [dl_with_sem(i, u) for i, u in enumerate(urls, 1)]
         res = await asyncio.gather(*tasks)
+        import gc
+        gc.collect()
         success = sum(res)
         failed = len(res) - success
         log.info(f"[DL] Downloaded {success}/{len(urls)} images, failed: {failed}")
@@ -197,45 +231,56 @@ class DL:
             log.error(f"[DL] Failed to prepare image {path}: {e}")
             return None
     def _save_pdf_reportlab(self, image_paths, output_path):
-        buffer = BytesIO()
-        c = canvas.Canvas(buffer)
+        import gc
+        # Write directly to file instead of BytesIO buffer to save RAM
+        c = canvas.Canvas(str(output_path))
         for img_path in image_paths:
             try:
+                # Get dimensions without loading full image into memory if possible
                 with Image.open(img_path) as img:
                     w, h = img.size
+                    # No need to keep img open, canvas.drawImage takes the path
+                
                 c.setPageSize((w, h))
-                c.drawImage(str(img_path), 0, 0, width=w, height=h)
+                # ReportLab handles the file reading/embedding efficiently
+                c.drawImage(str(img_path), 0, 0, width=w, height=h, preserveAspectRatio=True)
                 c.showPage()
+                # Occasional GC during large PDF creation
+                if len(image_paths) > 20: 
+                    gc.collect()
             except Exception as e:
-                log.warning(f"[DL] ReportLab page error: {e}")
+                log.warning(f"[DL] ReportLab page error for {img_path}: {e}")
+        
         c.save()
-        with open(output_path, 'wb') as f:
-            f.write(buffer.getvalue())
         return output_path
     def _save_pdf_pillow(self, image_paths, output_path, qual=95):
         import gc
         if not image_paths:
             return None
-        first_path = image_paths[0]
+        
+        limit = max(3500, Config.MAX_IMAGE_WIDTH)
+        
         try:
-            img1 = Image.open(first_path).convert('RGB')
-            if img1.width > 2000 or img1.height > 2000:
-                r = min(2000/img1.width, 2000/img1.height)
+            img1 = Image.open(image_paths[0]).convert('RGB')
+            if img1.width > limit or img1.height > limit:
+                r = min(limit/img1.width, limit/img1.height)
                 img1 = img1.resize((int(img1.width*r), int(img1.height*r)), Image.Resampling.LANCZOS)
         except Exception as e:
             log.warning(f"[DL] First page error: {e}")
             return None
+
         processed = []
         for pth in image_paths[1:]:
             try:
                 with Image.open(pth) as i:
                     i = i.convert('RGB')
-                    if i.width > 2000 or i.height > 2000:
-                        r = min(2000/i.width, 2000/i.height)
+                    if i.width > limit or i.height > limit:
+                        r = min(limit/i.width, limit/i.height)
                         i = i.resize((int(i.width*r), int(i.height*r)), Image.Resampling.LANCZOS)
                     processed.append(i.copy())
             except Exception as e:
                 log.warning(f"[DL] Page error: {e}")
+        
         try:
             img1.save(output_path, "PDF", save_all=True, append_images=processed, quality=qual)
         finally:
@@ -253,7 +298,7 @@ class DL:
             p = dir.parent / f"{fname}.pdf"
             p.parent.mkdir(parents=True, exist_ok=True)
             log.info(f"[DL] Creating PDF: {p}")
-            imgs = sorted(dir.glob("*.jpg"))
+            imgs = sorted([f for f in dir.iterdir() if f.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".mpo"]])
             if not imgs:
                 log.warning(f"[DL] No images found in {dir}")
                 return None
@@ -284,7 +329,7 @@ class DL:
             fname = format_filename(fmt, name, chap, chap_no)
             p = dir.parent / f"{fname}.cbz"
             log.info(f"[DL] Creating CBZ: {p}")
-            imgs = sorted(dir.glob("*.jpg"))
+            imgs = sorted([f for f in dir.iterdir() if f.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".mpo"]])
             if not imgs:
                 log.warning(f"[DL] No images found in {dir}")
                 return None

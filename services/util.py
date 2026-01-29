@@ -21,7 +21,7 @@ def trunc(txt, max_len=40):
 def extract_chap_no(chap_title):
     if not chap_title:
         return "000"
-    text = chap_title.lower()
+    text = str(chap_title).lower()
     patterns = [
         r'chapter\s*(\d+(?:\.\d+)?)',
         r'ch\.?\s*(\d+(?:\.\d+)?)',

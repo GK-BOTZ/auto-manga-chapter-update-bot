@@ -15,8 +15,9 @@ class Config:
     MAX_IMAGE_SIZE = 10 * 1024 * 1024
     MAX_PDF_SIZE = 50 * 1024 * 1024
     DOWNLOAD_DIR = "downloads"
-    MAX_IMAGE_WIDTH = 1200
-    JPEG_QUALITY = 95
+    MAX_IMAGE_WIDTH = 2500
+    JPEG_QUALITY = 100
+    ENABLE_WEBP = True # Option to use webp if needed
     FSUB_CHANNELS = []
     _fsub = os.getenv("FSUB_CHANNELS", "")
     if _fsub:

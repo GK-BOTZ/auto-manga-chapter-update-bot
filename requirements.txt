@@ -11,4 +11,5 @@ aiofiles
 pypdf
 Pillow
 apscheduler
+reportlab
 

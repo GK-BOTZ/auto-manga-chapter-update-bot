@@ -58,8 +58,12 @@ async def main():
                 log.error(f"[STORAGE] Cleanup error: {e}")
         async def memory_cleanup():
             import gc
-            gc.collect()
-            log.debug("[MEM] Garbage collection complete")
+            # Clear internal caches and run multiple GC generations
+            gc.collect(0)
+            gc.collect(1)
+            gc.collect(2)
+            log.info("[MEM] Memory cleanup and garbage collection complete")
+
         async def process_persistent_tasks():
             try:
                 from plugins.broadcast import delete_broadcast_msgs
@@ -70,6 +74,7 @@ async def main():
                     await db.del_task(task['_id'])
             except Exception as e:
                 log.error(f"[TASKS] Process error: {e}")
+
         from plugins.chan_listen import init_listener, chan_listener, start_listener
         init_listener(app)
         app.add_handler(chan_listener)
@@ -79,12 +84,12 @@ async def main():
         from services.backup import create_db_backup
         sched.add_job(check_job, "interval", minutes=5, args=[app])
         sched.add_job(cache_cleanup, "interval", minutes=10)
-        sched.add_job(storage_cleanup, "interval", hours=1)
-        sched.add_job(memory_cleanup, "interval", minutes=30)
+        sched.add_job(storage_cleanup, "interval", minutes=10)
+        sched.add_job(memory_cleanup, "interval", minutes=5)
         sched.add_job(create_db_backup, "interval", hours=24, args=[app])
         sched.add_job(process_persistent_tasks, "interval", minutes=1)
         sched.start()
-        log.info("Scheduler started (check: 5m, cache: 10m, storage: 1h, memory: 30m, backup: 24h)")
+        log.info("Scheduler started (check: 5m, cache: 10m, storage: 10m, memory: 5m, backup: 24h)")
         await idle()
 if __name__ == "__main__":
     import asyncio
